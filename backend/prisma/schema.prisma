@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String         @default("João Victor")
+  createdAt     DateTime       @default(now())
+  assets        Asset[]
+  alerts        Alert[]
+  notifications Notification[]
+}
+
+model Asset {
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id])
+  ticker        String
+  name          String?
+  carteira      String
+  tipo          String
+  quantidade    Float
+  precoEntrada  Float
+  precoAtual    Float
+  currency      String         @default("BRL")
+  dataCompra    DateTime       @default(now())
+  corretora     String?
+  ativo         Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  alerts        Alert[]
+  priceHistory  PriceHistory[]
+
+  @@index([userId, ativo])
+  @@index([ticker])
+}
+
+model Alert {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetId        Int
+  asset          Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  tipo           String
+  condicao       String
+  valorGatilho   Float
+  acaoSugerida   String
+  ativo          Boolean   @default(true)
+  notificarEmail Boolean   @default(false)
+  notificarPush  Boolean   @default(true)
+  lastTriggered  DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([userId, ativo])
+}
+
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  assetId   Int
+  asset     Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  preco     Float
+  timestamp DateTime @default(now())
+
+  @@index([assetId, timestamp])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alertId   Int?
+  mensagem  String
+  lida      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, lida])
+}
