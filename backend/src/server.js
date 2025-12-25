@@ -20,7 +20,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check (SEM /api)
+// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -29,7 +29,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Rotas da API (COM /api)
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetsRoutes);
 app.use('/api/alerts', alertsRoutes);
