@@ -1,181 +1,80 @@
-const axios = require('axios');
+const cron = require('node-cron');
 const { PrismaClient } = require('@prisma/client');
+const { getAssetPrice } = require('./priceAPI');
 const { logger } = require('../utils/logger');
 
 const prisma = new PrismaClient();
 
-// Yahoo Finance - Ações BR/USA
-async function fetchYahooPrice(ticker, suffix = '') {
-  try {
-    const symbol = suffix ? `${ticker}.${suffix}` : ticker;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
-    
-    const response = await axios.get(url, {
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }
-    });
-    
-    const price = response.data.chart.result[0].meta.regularMarketPrice;
-    return parseFloat(price);
-  } catch (error) {
-    logger.error(`Erro ao buscar ${ticker} no Yahoo:`, error.message);
-    return null;
-  }
-}
-
-// CoinGecko - Cripto
-async function fetchCryptoPrice(ticker) {
-  try {
-    const coinMap = {
-      'BTC': 'bitcoin',
-      'ETH': 'ethereum',
-      'SOL': 'solana',
-      'FET': 'fetch-ai',
-      'RENDER': 'render-token',
-      'ONDO': 'ondo-finance',
-      'TAO': 'bittensor',
-      'OLAS': 'autonolas',
-      'ARKM': 'arkham',
-      'AZERO': 'aleph-zero',
-      'HNT': 'helium',
-      'MAGIC': 'magic'
-    };
-    
-    const coinId = coinMap[ticker] || ticker.toLowerCase();
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`;
-    
-    const response = await axios.get(url, {
-      timeout: 10000,
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-    
-    return response.data[coinId]?.usd || null;
-  } catch (error) {
-    logger.error(`Erro ao buscar cripto ${ticker}:`, error.message);
-    return null;
-  }
-}
-
-// Atualiza TODOS os ativos
 async function updateAllPrices() {
-  logger.info('📊 Iniciando atualização de preços...');
+  console.log('🔄 Iniciando atualização de preços...');
+  logger.info('Iniciando atualização de preços');
   
-  const assets = await prisma.asset.findMany({
-    where: { ativo: true }
+  try {
+    const assets = await prisma.asset.findMany({
+      where: {
+        tipo: {
+          in: ['Cripto', 'Ação BR', 'Ação USA', 'ETF BR', 'ETF USA']
+        }
+      }
+    });
+    
+    console.log(`📊 Encontrados ${assets.length} ativos para atualizar`);
+    
+    let updated = 0;
+    let failed = 0;
+    
+    for (const asset of assets) {
+      try {
+        const newPrice = await getAssetPrice(asset);
+        
+        if (newPrice && newPrice > 0) {
+          await prisma.asset.update({
+            where: { id: asset.id },
+            data: { precoAtual: newPrice }
+          });
+          
+          console.log(`✅ ${asset.ticker}: ${asset.precoAtual} → ${newPrice}`);
+          updated++;
+          
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.log(`⚠️  ${asset.ticker}: Preço não disponível`);
+          failed++;
+        }
+      } catch (error) {
+        console.error(`❌ Erro ao atualizar ${asset.ticker}:`, error.message);
+        failed++;
+      }
+    }
+    
+    console.log(`✅ Atualização concluída: ${updated} atualizados, ${failed} falharam`);
+    logger.info(`Atualização concluída: ${updated} atualizados, ${failed} falharam`);
+    
+    return { updated, failed };
+  } catch (error) {
+    console.error('❌ Erro na atualização:', error);
+    logger.error('Erro na atualização de preços:', error);
+    throw error;
+  }
+}
+
+function startPriceUpdateCron() {
+  cron.schedule('0 18 * * *', async () => {
+    console.log('⏰ Atualização automática diária iniciada');
+    try {
+      await updateAllPrices();
+    } catch (error) {
+      console.error('Erro no cron:', error);
+    }
+  }, {
+    timezone: 'America/Sao_Paulo'
   });
   
-  logger.info(`📈 Encontrados ${assets.length} ativos ativos`);
-  
-  let updated = 0;
-  let errors = 0;
-  let skipped = 0;
-  
-  for (const asset of assets) {
-    try {
-      let newPrice = null;
-      
-      // Determina qual API usar
-      if (asset.tipo === 'Cripto' || asset.tipo === 'cripto') {
-        newPrice = await fetchCryptoPrice(asset.ticker);
-      } else if (asset.tipo.includes('BR') || asset.ticker.includes('3') || asset.ticker.includes('11')) {
-        // Ações brasileiras (B3)
-        newPrice = await fetchYahooPrice(asset.ticker, 'SA');
-      } else if (asset.tipo.includes('USA') || asset.tipo.includes('Ação USA') || asset.tipo.includes('ETF USA') || asset.tipo.includes('Ouro') || asset.tipo.includes('CTAs') || asset.tipo.includes('Treasuries')) {
-        // Ações americanas
-        newPrice = await fetchYahooPrice(asset.ticker);
-      } else if (asset.tipo === 'RF') {
-        // Renda Fixa: não atualiza automaticamente
-        skipped++;
-        continue;
-      }
-      
-      if (newPrice && newPrice > 0) {
-        // Atualiza preço do ativo
-        await prisma.asset.update({
-          where: { id: asset.id },
-          data: { precoAtual: newPrice }
-        });
-        
-        // Salva no histórico
-        await prisma.priceHistory.create({
-          data: {
-            assetId: asset.id,
-            preco: newPrice
-          }
-        });
-        
-        updated++;
-        logger.info(`✅ ${asset.ticker}: ${asset.currency === 'USD' ? 'US$' : 'R$'} ${newPrice.toFixed(2)}`);
-      } else {
-        errors++;
-        logger.warn(`⚠️  ${asset.ticker}: Preço não disponível`);
-      }
-      
-      // Rate limiting: espera 500ms entre chamadas
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-    } catch (error) {
-      errors++;
-      logger.error(`❌ Erro ao atualizar ${asset.ticker}:`, error.message);
-    }
-  }
-  
-  logger.info(`\n📊 Resumo: ${updated} atualizados, ${skipped} pulados (RF), ${errors} erros`);
-  return { updated, skipped, errors };
+  console.log('✅ Cron configurado: atualização diária às 18h');
+  logger.info('Cron de atualização de preços configurado');
 }
 
-// Atualiza um único ativo (sob demanda)
-async function updateSinglePrice(assetId) {
-  try {
-    const asset = await prisma.asset.findUnique({
-      where: { id: assetId }
-    });
-    
-    if (!asset) {
-      throw new Error('Ativo não encontrado');
-    }
-    
-    let newPrice = null;
-    
-    if (asset.tipo === 'Cripto' || asset.tipo === 'cripto') {
-      newPrice = await fetchCryptoPrice(asset.ticker);
-    } else if (asset.tipo.includes('BR')) {
-      newPrice = await fetchYahooPrice(asset.ticker, 'SA');
-    } else if (asset.tipo.includes('USA')) {
-      newPrice = await fetchYahooPrice(asset.ticker);
-    }
-    
-    if (newPrice && newPrice > 0) {
-      await prisma.asset.update({
-        where: { id: assetId },
-        data: { precoAtual: newPrice }
-      });
-      
-      await prisma.priceHistory.create({
-        data: {
-          assetId: asset.id,
-          preco: newPrice
-        }
-      });
-      
-      return { success: true, price: newPrice };
-    }
-    
-    return { success: false, error: 'Preço não disponível' };
-    
-  } catch (error) {
-    logger.error(`Erro ao atualizar ativo ${assetId}:`, error);
-    return { success: false, error: error.message };
-  }
-}
-
-module.exports = { 
-  updateAllPrices, 
-  updateSinglePrice,
-  fetchYahooPrice,
-  fetchCryptoPrice 
+module.exports = {
+  updateAllPrices,
+  startPriceUpdateCron
 };
