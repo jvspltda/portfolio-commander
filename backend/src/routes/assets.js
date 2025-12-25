@@ -1,6 +1,51 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { authenticateToken } = require('../middleware/auth');
+const { updateAllPrices } = require('../services/priceUpdater'); // ← ADICIONAR
+
+const router = express.Router();
+const prisma = new PrismaClient();
+```
+
+---
+
+### **2️⃣ NO FINAL (ANTES DE `module.exports = router;`):**
+
+Adicione este bloco **ANTES** da última linha:
+
+```javascript
+// POST /api/assets/update-prices - Atualizar todos os preços
+router.post('/update-prices', async (req, res) => {
+  try {
+    const result = await updateAllPrices();
+    res.json({
+      success: true,
+      message: `${result.updated} preços atualizados, ${result.failed} falharam`,
+      updated: result.updated,
+      failed: result.failed
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+module.exports = router;
+```
+
+---
+
+## 📄 CÓDIGO COMPLETO FINAL:
+
+**Aqui está o arquivo COMPLETO como deve ficar:**
+
+```javascript
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { authenticateToken } = require('../middleware/auth');
+const { updateAllPrices } = require('../services/priceUpdater');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -174,6 +219,24 @@ router.get('/portfolio/summary', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/assets/update-prices - Atualizar todos os preços
+router.post('/update-prices', async (req, res) => {
+  try {
+    const result = await updateAllPrices();
+    res.json({
+      success: true,
+      message: `${result.updated} preços atualizados, ${result.failed} falharam`,
+      updated: result.updated,
+      failed: result.failed
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 });
 
