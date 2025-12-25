@@ -1,47 +1,4 @@
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { authenticateToken } = require('../middleware/auth');
-const { updateAllPrices } = require('../services/priceUpdater'); // ← ADICIONAR
 
-const router = express.Router();
-const prisma = new PrismaClient();
-```
-
----
-
-### **2️⃣ NO FINAL (ANTES DE `module.exports = router;`):**
-
-Adicione este bloco **ANTES** da última linha:
-
-```javascript
-// POST /api/assets/update-prices - Atualizar todos os preços
-router.post('/update-prices', async (req, res) => {
-  try {
-    const result = await updateAllPrices();
-    res.json({
-      success: true,
-      message: `${result.updated} preços atualizados, ${result.failed} falharam`,
-      updated: result.updated,
-      failed: result.failed
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-module.exports = router;
-```
-
----
-
-## 📄 CÓDIGO COMPLETO FINAL:
-
-**Aqui está o arquivo COMPLETO como deve ficar:**
-
-```javascript
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { authenticateToken } = require('../middleware/auth');
@@ -50,10 +7,8 @@ const { updateAllPrices } = require('../services/priceUpdater');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Middleware: todas rotas requerem autenticação
 router.use(authenticateToken);
 
-// GET /api/assets
 router.get('/', async (req, res) => {
   try {
     const assets = await prisma.asset.findMany({
@@ -70,7 +25,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/assets/:id
 router.get('/:id', async (req, res) => {
   try {
     const asset = await prisma.asset.findFirst({
@@ -96,7 +50,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/assets
 router.post('/', async (req, res) => {
   try {
     const { ticker, name, carteira, tipo, quantidade, precoEntrada, precoAtual, currency, corretora } = req.body;
@@ -126,7 +79,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/assets/:id
 router.put('/:id', async (req, res) => {
   try {
     const { quantidade, precoAtual, corretora } = req.body;
@@ -154,7 +106,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/assets/:id
 router.delete('/:id', async (req, res) => {
   try {
     const asset = await prisma.asset.updateMany({
@@ -175,7 +126,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// GET /api/assets/portfolio/summary
 router.get('/portfolio/summary', async (req, res) => {
   try {
     const assets = await prisma.asset.findMany({
@@ -222,7 +172,6 @@ router.get('/portfolio/summary', async (req, res) => {
   }
 });
 
-// POST /api/assets/update-prices - Atualizar todos os preços
 router.post('/update-prices', async (req, res) => {
   try {
     const result = await updateAllPrices();
