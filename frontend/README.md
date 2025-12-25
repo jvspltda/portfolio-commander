@@ -51,3 +51,4 @@ Os arquivos compilados estarão em `dist/`
 - Axios
 - React Router
 - Chart.js
+- update
