@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getAssets, getPortfolioSummary, deleteAsset, updateAsset } from '../../services/api';
 import AssetsTable from './AssetsTable';
@@ -172,4 +171,4 @@ export default function Dashboard() {
       )}
     </div>
   );
-          }
+}
