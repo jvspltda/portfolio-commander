@@ -3,6 +3,28 @@ const axios = require('axios');
 
 const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY || 'demo';
 
+// Variável global para cotação USD/BRL
+let USD_BRL_RATE = 5.43;
+
+// Buscar cotação do dólar
+async function getUSDtoBRL() {
+  try {
+    const response = await axios.get('https://economia.awesomeapi.com.br/json/last/USD-BRL', {
+      timeout: 5000
+    });
+    
+    if (response.data && response.data.USDBRL && response.data.USDBRL.bid) {
+      USD_BRL_RATE = parseFloat(response.data.USDBRL.bid);
+      console.log(`💱 Cotação USD/BRL: R$ ${USD_BRL_RATE.toFixed(2)}`);
+      return USD_BRL_RATE;
+    }
+    return USD_BRL_RATE;
+  } catch (error) {
+    console.error('Erro ao buscar cotação:', error.message);
+    return USD_BRL_RATE;
+  }
+}
+
 // Mapa de criptomoedas (CoinGecko)
 const CRYPTO_MAP = {
   'BTC': 'bitcoin',
@@ -43,7 +65,9 @@ async function getUSStockPrice(ticker) {
     const response = await axios.get(url, { timeout: 5000 });
     
     if (response.data['Global Quote'] && response.data['Global Quote']['05. price']) {
-      return parseFloat(response.data['Global Quote']['05. price']);
+      const priceUSD = parseFloat(response.data['Global Quote']['05. price']);
+      await getUSDtoBRL();
+      return priceUSD * USD_BRL_RATE;
     }
     return null;
   } catch (error) {
@@ -102,11 +126,11 @@ async function getAssetPrice(asset) {
     return null;
   }
 }
-
 module.exports = {
   getAssetPrice,
   getBRStockPrice,
   getUSStockPrice,
-  getCryptoPrice
+  getCryptoPrice,
+  getUSDtoBRL
 };
  
