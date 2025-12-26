@@ -85,11 +85,11 @@ async function getCryptoPrice(ticker) {
       return null;
     }
     
-    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`;
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=brl`;
     const response = await axios.get(url, { timeout: 5000 });
     
-    if (response.data[coinId] && response.data[coinId].usd) {
-      return parseFloat(response.data[coinId].usd);
+    if (response.data[coinId] && response.data[coinId].brl) {
+      return parseFloat(response.data[coinId].brl);
     }
     return null;
   } catch (error) {
