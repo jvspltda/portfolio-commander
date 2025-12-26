@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const { PrismaClient } = require('@prisma/client');
-const { getAssetPrice } = require('./priceAPI');
+const { getAssetPrice, getUSDtoBRL } = require('./priceAPI');
 const { logger } = require('../utils/logger');
 
 const prisma = new PrismaClient();
@@ -8,6 +8,8 @@ const prisma = new PrismaClient();
 async function updateAllPrices() {
   console.log('🔄 Iniciando atualização de preços...');
   logger.info('Iniciando atualização de preços');
+
+  await getUSDtoBRL();
   
   try {
     const assets = await prisma.asset.findMany({
