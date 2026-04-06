@@ -137,9 +137,11 @@ Salve e faça **Redeploy** do frontend.
 
 **Railway — variáveis:** `FRONTEND_URL` deve ser exatamente `https://portfolio-commander.vercel.app` (origem permitida no CORS). Sem isso, o navegador bloqueia chamadas à API a partir do site.
 
-**“Erro no servidor” ao entrar:** quase sempre **banco** ou **usuário inexistente**. Confira no Railway: `DATABASE_URL`, **`DIRECT_URL`** (mesma URI **direct** do Supabase se não usar pooler), `JWT_SECRET`. O deploy roda `prisma migrate deploy` ao subir; falta criar o usuário no banco de produção uma vez (`npm run seed` com `.env` apontando para o banco certo).
+**“Erro no servidor” ao entrar:** quase sempre **banco** ou **usuário inexistente**. Confira no Railway: **`DATABASE_URL`** (URI **Direct** do Supabase), **`JWT_SECRET`**. Na subida do container roda `prisma migrate deploy` (`npm start` → `scripts/start-prod.js`); falta criar o usuário no banco de produção uma vez (`npm run seed` com `.env` apontando para o banco certo).
 
-**Supabase — `FATAL: Tenant or user not found`:** costuma ser **connection string do pooler** (host `pooler.supabase.com` / `pooler.supabase.io`) com **usuário ou senha errados**. Solução simples: no painel Supabase use **Direct connection** (host `db.<ref>.supabase.co`, porta **5432**, usuário **postgres**), copie a URI e use **a mesma** em `DATABASE_URL` e `DIRECT_URL` no Railway. Caracteres especiais na senha devem estar **codificados na URL**. Depois, **Redeploy** no Railway.
+**Supabase — `FATAL: Tenant or user not found`:** costuma ser **connection string do pooler** com usuário errado. Use **Direct connection** no painel (host `db.<ref>.supabase.co`, porta **5432**) só em **`DATABASE_URL`**. Senha com caracteres especiais: use a URI já codificada do Supabase. Depois, **Redeploy** no Railway.
+
+**“Prisma não conseguiu inicializar”:** em geral **`DATABASE_URL` ausente ou inválida** no Railway (ou variável com nome errado). Remova `DIRECT_URL` se ainda existir no painel — o schema usa só `DATABASE_URL`.
 
 Se a página ainda pedir **senha**, o frontend na Vercel está em build antigo: envie o código atual ao Git e dispare um novo deploy.
 
