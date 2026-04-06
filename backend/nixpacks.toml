@@ -6,4 +6,5 @@ nixPkgs = ['nodejs-18_x']
 cmds = ['npm install --omit=dev', 'npx prisma generate']
 
 [start]
-cmd = 'npm start'
+# `node` direto evita o aviso npm 10+ sobre `config production` ao usar `npm start` com NODE_ENV=production
+cmd = 'node src/server.js'
