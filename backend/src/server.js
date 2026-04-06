@@ -21,6 +21,7 @@ const alertsRoutes = require('./routes/alerts');
 const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
@@ -68,8 +69,6 @@ app.use((err, req, res, next) => {
   logger.error('Server error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
-
-const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log('=================================');

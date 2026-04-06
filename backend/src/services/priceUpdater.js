@@ -1,8 +1,7 @@
 const cron = require('node-cron');
 const prisma = require('../lib/prisma');
-const { getAssetPrice } = require('./priceAPI');
+const { getAssetPrice, getUSDtoBRL } = require('./priceAPI');
 const { logger } = require('../utils/logger');
-const { USD_BRL } = require('../utils/constants');
 const { checkAllAlerts } = require('./alertChecker');
 
 const TIPOS_ATUALIZAVEIS = ['Cripto', 'Ação BR', 'Ação USA', 'ETF BR', 'ETF USA'];
@@ -15,6 +14,8 @@ async function updateAllPrices(userId) {
   logger.info('Iniciando atualização de preços');
 
   try {
+    await getUSDtoBRL();
+
     const where = {
       ativo: true,
       tipo: { in: TIPOS_ATUALIZAVEIS }
@@ -32,11 +33,7 @@ async function updateAllPrices(userId) {
 
     for (const asset of assets) {
       try {
-        let newPrice = await getAssetPrice(asset);
-
-        if (asset.tipo === 'Cripto' && asset.currency === 'BRL' && newPrice != null && newPrice > 0) {
-          newPrice = newPrice * USD_BRL;
-        }
+        const newPrice = await getAssetPrice(asset);
 
         if (newPrice && newPrice > 0) {
           await prisma.$transaction([
