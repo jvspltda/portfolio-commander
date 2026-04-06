@@ -16,6 +16,13 @@ if (!process.env.DATABASE_URL || !String(process.env.DATABASE_URL).trim()) {
   process.exit(1);
 }
 
+if (!process.env.DIRECT_URL || !String(process.env.DIRECT_URL).trim()) {
+  console.error(
+    'FATAL: DIRECT_URL não definida. No Railway: URI Direct (db.xxx.supabase.co:5432). Igual a DATABASE_URL se não usar pooler.'
+  );
+  process.exit(1);
+}
+
 try {
   console.log('[start-prod] prisma migrate deploy…');
   execSync('npx prisma migrate deploy', {

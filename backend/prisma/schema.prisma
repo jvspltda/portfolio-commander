@@ -5,10 +5,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  // Supabase: use a URI "Direct connection" (db.xxx.supabase.co:5432) em uma única variável.
-  // Se no futuro usar pooler PgBouncer + URL direta para migrations, veja doc Prisma + Supabase (directUrl).
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // DATABASE_URL: pooler (6543) ou Direct — queries do Prisma Client
+  // DIRECT_URL: sempre Direct (5432) — prisma migrate deploy (pooler trava/falha em migrations)
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

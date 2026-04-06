@@ -36,7 +36,8 @@ No serviço → **Variables** → adicione (valores reais vêm do Supabase / ger
 
 | Variável | Obrigatório | Descrição |
 |----------|-------------|-----------|
-| `DATABASE_URL` | Sim | URI **PostgreSQL** do Supabase. Recomendação: **Direct connection** (evita erro *Tenant or user not found* no pooler). Acrescente `?sslmode=require` se o painel não incluir. |
+| `DATABASE_URL` | Sim | URI do Supabase (**pooler** `6543` ou **Direct** `5432`). Queries da API. |
+| `DIRECT_URL` | Sim | **Sempre** a URI **Direct** (`db.<ref>.supabase.co:5432`). O Prisma usa para `migrate deploy` (pooler trava migrations). Se não usar pooler, **duplique** o mesmo valor de `DATABASE_URL`. |
 | `JWT_SECRET` | Sim | String longa e aleatória (não commite no Git). |
 | `ALLOWED_USER_EMAIL` | Opcional | E-mail único permitido no login (padrão no código: `jvsp.ltda2@gmail.com`). |
 | `FRONTEND_URL` | Sim | URL exata do site na Vercel, ex.: `https://portfolio-commander.vercel.app` (CORS). Sem `barra` no final. |
@@ -58,7 +59,7 @@ Salve. O Railway costuma **redeployar** sozinho ao alterar variáveis.
 - **Install (build):** `npm install --omit=dev` → `npx prisma generate` (sem `migrate deploy` no build)
 - **Start:** `node scripts/start-prod.js` → **`prisma migrate deploy`** e depois o servidor
 
-A rede do **build** (Docker) costuma **não alcançar** o Supabase (`P1001`). Por isso as migrations rodam no **start**, quando o container já está na rede de execução do Railway. É preciso que **`DATABASE_URL`** exista no **runtime** (variáveis do serviço).
+A rede do **build** (Docker) costuma **não alcançar** o Supabase (`P1001`). Por isso as migrations rodam no **start**, quando o container já está na rede de execução do Railway. É preciso que **`DATABASE_URL`** e **`DIRECT_URL`** existam no **runtime** (variáveis do serviço).
 
 Se o **start** falhar em `migrate deploy`, confira Supabase ativo, `DATABASE_URL` e logs; ou rode no **Shell**: `cd backend && npx prisma migrate deploy`.
 
@@ -107,7 +108,7 @@ Volte ao Railway e confirme `FRONTEND_URL` = URL exata do Vercel. Redeploy se ne
 |---|------|
 | 1 | Supabase com projeto criado e senha guardada |
 | 2 | Railway: serviço com **Root Directory** = `backend` |
-| 3 | Railway: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `NODE_ENV=production` |
+| 3 | Railway: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `FRONTEND_URL`, `NODE_ENV=production` |
 | 4 | Railway: domínio gerado; testar `/health` e `/health/db` |
 | 5 | Rodar **seed** no banco de produção |
 | 6 | Vercel: `VITE_API_URL` apontando para `.../api` |

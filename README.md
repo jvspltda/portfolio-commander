@@ -137,11 +137,11 @@ Salve e faça **Redeploy** do frontend.
 
 **Railway — variáveis:** `FRONTEND_URL` deve ser exatamente `https://portfolio-commander.vercel.app` (origem permitida no CORS). Sem isso, o navegador bloqueia chamadas à API a partir do site.
 
-**“Erro no servidor” ao entrar:** quase sempre **banco** ou **usuário inexistente**. Confira no Railway: **`DATABASE_URL`** (URI **Direct** do Supabase), **`JWT_SECRET`**. Na subida do container roda `prisma migrate deploy` (`npm start` → `scripts/start-prod.js`); falta criar o usuário no banco de produção uma vez (`npm run seed` com `.env` apontando para o banco certo).
+**“Erro no servidor” ao entrar:** quase sempre **banco** ou **usuário inexistente**. Confira no Railway: **`DATABASE_URL`**, **`DIRECT_URL`** (URI **Direct** `db.xxx:5432` — migrations; pode ser igual a `DATABASE_URL` se não usar pooler), **`JWT_SECRET`**. Na subida roda `prisma migrate deploy` (`npm start` → `scripts/start-prod.js`); rode **seed** no banco de produção uma vez se precisar do usuário de login.
 
-**Supabase — `FATAL: Tenant or user not found`:** costuma ser **connection string do pooler** com usuário errado. Use **Direct connection** no painel (host `db.<ref>.supabase.co`, porta **5432**) só em **`DATABASE_URL`**. Senha com caracteres especiais: use a URI já codificada do Supabase. Depois, **Redeploy** no Railway.
+**Supabase — `FATAL: Tenant or user not found`:** costuma ser **pooler** com usuário errado. **`DIRECT_URL`** deve ser sempre **Direct** (`db.<ref>.supabase.co:5432`). **`DATABASE_URL`** pode ser pooler ou Direct.
 
-**“Prisma não conseguiu inicializar”:** em geral **`DATABASE_URL` ausente ou inválida** no Railway (ou variável com nome errado). Remova `DIRECT_URL` se ainda existir no painel — o schema usa só `DATABASE_URL`.
+**“Prisma não conseguiu inicializar” / 502 no start:** confira **`DATABASE_URL`** e **`DIRECT_URL`** no Railway. **Migrations não usem só o pooler** — defina **`DIRECT_URL`** com a URI Direct (ou duas variáveis iguais se for só Direct).
 
 Se a página ainda pedir **senha**, o frontend na Vercel está em build antigo: envie o código atual ao Git e dispare um novo deploy.
 
@@ -193,7 +193,8 @@ Se a página ainda pedir **senha**, o frontend na Vercel está em build antigo: 
 
 | Variável | Onde | Descrição |
 |----------|------|-----------|
-| `DATABASE_URL` | backend | PostgreSQL |
+| `DATABASE_URL` | backend | PostgreSQL (pooler ou Direct) |
+| `DIRECT_URL` | backend | PostgreSQL Direct — migrations |
 | `JWT_SECRET` | backend | Obrigatório em produção |
 | `ALLOWED_USER_EMAIL` | backend | Único e-mail de login (padrão: jvsp.ltda2@gmail.com) |
 | `FRONTEND_URL` | backend | Origem CORS |

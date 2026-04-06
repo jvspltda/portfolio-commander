@@ -1,5 +1,19 @@
 require('dotenv').config();
 
+if (!process.env.DATABASE_URL || !String(process.env.DATABASE_URL).trim()) {
+  console.error(
+    'FATAL: DATABASE_URL não está definida. No Railway: Variables → DATABASE_URL. Local: copie backend/.env.example para .env'
+  );
+  process.exit(1);
+}
+
+if (!process.env.DIRECT_URL || !String(process.env.DIRECT_URL).trim()) {
+  console.error(
+    'FATAL: DIRECT_URL não está definida. Use a URI Direct do Supabase (host db.xxx.supabase.co, porta 5432). Se não usa pooler, defina DIRECT_URL igual a DATABASE_URL.'
+  );
+  process.exit(1);
+}
+
 const { getJwtSecret } = require('./config/jwt');
 
 try {

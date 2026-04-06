@@ -8,27 +8,34 @@ const { logger } = require('../utils/logger');
 const router = express.Router();
 
 function loginErrorResponse(error) {
-  const code = error.code;
+  const prismaCode = error.code ?? error.errorCode;
   const name = error.name || '';
+  const msg = String(error.message || '');
 
   logger.error(`Erro no login: ${error.message}`);
-  console.error('[auth/login]', name, code, error.message);
+  console.error('[auth/login]', name, prismaCode, error.message);
 
-  if (code === 'P1001' || code === 'P1000') {
+  const unreachable =
+    prismaCode === 'P1001' ||
+    prismaCode === 'P1000' ||
+    /Can't reach database server/i.test(msg);
+
+  if (unreachable) {
     return {
       status: 503,
       body: {
-        error: 'Não foi possível conectar ao banco. Confira DATABASE_URL no Railway e se o Supabase aceita conexões (SSL).',
-        code
+        error:
+          'Não foi possível conectar ao banco (rede/host). No Supabase: projeto ativo (não pausado), URI Direct e ?sslmode=require. No Railway: DATABASE_URL igual à do painel.',
+        code: prismaCode || 'P1001'
       }
     };
   }
-  if (code === 'P1017') {
+  if (prismaCode === 'P1017') {
     return {
       status: 503,
       body: {
         error: 'Conexão com o banco foi encerrada. Tente de novo ou revise o pooler do Supabase.',
-        code
+        code: prismaCode
       }
     };
   }
@@ -36,8 +43,9 @@ function loginErrorResponse(error) {
     return {
       status: 503,
       body: {
-        error: 'Prisma não conseguiu inicializar. Verifique DATABASE_URL e se rodou prisma migrate.',
-        code: name
+        error:
+          'Prisma não conseguiu conectar ao banco. No Railway: confira DATABASE_URL (URI Direct do Supabase, sslmode=require), rede do projeto e se o build rodou prisma migrate deploy.',
+        code: prismaCode || name
       }
     };
   }
@@ -46,7 +54,7 @@ function loginErrorResponse(error) {
     status: 500,
     body: {
       error: 'Erro no servidor',
-      ...(code && { code })
+      ...(prismaCode && { code: prismaCode })
     }
   };
 }
