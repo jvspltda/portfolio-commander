@@ -140,8 +140,20 @@ function AlertCard({ alert, onToggle, onDelete }) {
     if (alert.tipo === 'preco') {
       return formatCurrency(alert.valorGatilho, alert.asset.currency);
     }
+    if (alert.tipo === 'alocacao') {
+      return `${alert.valorGatilho}% do portfólio`;
+    }
     return `${alert.valorGatilho}%`;
   };
+
+  const tipoLabel =
+    alert.tipo === 'preco'
+      ? 'Preço'
+      : alert.tipo === 'percentual'
+        ? 'Ganho/Perda'
+        : alert.tipo === 'alocacao'
+          ? 'Alocação'
+          : 'Alerta';
 
   return (
     <div className={`p-4 rounded-lg border ${
@@ -156,9 +168,14 @@ function AlertCard({ alert, onToggle, onDelete }) {
             <span className={`badge ${alert.ativo ? 'badge-success' : 'badge-danger'}`}>
               {alert.ativo ? 'Ativo' : 'Desativado'}
             </span>
+            {alert.notificarEmail && (
+              <span className="text-xs text-gray-500" title="Também envia e-mail se SMTP estiver configurado">
+                ✉ e-mail
+              </span>
+            )}
           </div>
           <p className="text-sm text-gray-300 mb-1">
-            {alert.tipo === 'preco' ? 'Preço' : 'Ganho/Perda'} {alert.condicao} {getValueDisplay()}
+            {tipoLabel} {alert.condicao} {getValueDisplay()}
           </p>
           <p className="text-sm text-yellow-400">→ {alert.acaoSugerida}</p>
           {alert.lastTriggered && (

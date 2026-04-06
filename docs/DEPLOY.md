@@ -43,8 +43,7 @@ Se você seguiu o SETUP.md, seu database já está no Supabase! ✅
 ```
 DATABASE_URL=sua-url-do-supabase
 JWT_SECRET=seu-secret-super-seguro
-USER_EMAIL=jvsp.ltda2@gmail.com
-USER_PASSWORD=dick1010
+ALLOWED_USER_EMAIL=jvsp.ltda2@gmail.com
 FRONTEND_URL=https://seu-app.vercel.app
 TZ=America/Sao_Paulo
 PORT=3000
@@ -120,9 +119,7 @@ Você receberá uma URL tipo: `https://portfolio-commander.vercel.app`
 ## 5️⃣ TESTAR APLICAÇÃO ONLINE
 
 1. Abra a URL do Vercel
-2. Faça login:
-   - Email: jvsp.ltda2@gmail.com
-   - Senha: dick1010
+2. Clique em **Entrar** (sem senha; só o e-mail configurado em `ALLOWED_USER_EMAIL`).
 3. 🎉 **Aplicação online e funcionando!**
 
 ---

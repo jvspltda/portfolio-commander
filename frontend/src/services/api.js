@@ -22,7 +22,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    if (status === 401 || status === 403) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/';
@@ -32,8 +33,7 @@ api.interceptors.response.use(
 );
 
 // ===== AUTH =====
-export const login = (email, password) => 
-  api.post('/auth/login', { email, password });
+export const login = (email) => api.post('/auth/login', { email });
 
 export const verifyToken = () => 
   api.get('/auth/me');

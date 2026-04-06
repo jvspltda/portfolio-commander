@@ -1,3 +1,6 @@
+/** Único usuário do app — alinhado ao backend (`ALLOWED_USER_EMAIL` / padrão). */
+export const SINGLE_USER_EMAIL = 'jvsp.ltda2@gmail.com';
+
 // Tipos de ativo
 export const ASSET_TYPES = [
   'RF',

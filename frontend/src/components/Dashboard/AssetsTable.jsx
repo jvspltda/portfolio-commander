@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatCurrency, formatPercent, calculateValue, calculatePL } from '../../utils/helpers';
 
 export default function AssetsTable({ assets, onDelete, onUpdatePrice }) {
+  const [draftPrices, setDraftPrices] = useState({});
+
+  useEffect(() => {
+    const next = {};
+    assets.forEach((a) => {
+      next[a.id] = String(a.precoAtual);
+    });
+    setDraftPrices(next);
+  }, [assets]);
+
   if (assets.length === 0) {
     return (
       <div className="text-center py-12 text-gray-400">
@@ -29,11 +39,12 @@ export default function AssetsTable({ assets, onDelete, onUpdatePrice }) {
           </tr>
         </thead>
         <tbody>
-          {assets.map(asset => {
+          {assets.map((asset) => {
             const valor = calculateValue(asset);
             const pl = calculatePL(asset);
             const decimals = asset.tipo === 'Cripto' ? 4 : 0;
-            
+            const displayPrice = draftPrices[asset.id] ?? String(asset.precoAtual);
+
             return (
               <tr key={asset.id}>
                 <td>
@@ -51,11 +62,28 @@ export default function AssetsTable({ assets, onDelete, onUpdatePrice }) {
                   {asset.quantidade.toFixed(decimals)}
                 </td>
                 <td className="text-right">
-                  <input 
+                  <input
                     type="number"
                     step="0.01"
-                    value={asset.precoAtual}
-                    onChange={(e) => onUpdatePrice(asset.id, e.target.value)}
+                    value={displayPrice}
+                    onChange={(e) =>
+                      setDraftPrices((prev) => ({ ...prev, [asset.id]: e.target.value }))
+                    }
+                    onBlur={() => {
+                      const num = parseFloat(draftPrices[asset.id] ?? '');
+                      if (Number.isNaN(num)) {
+                        setDraftPrices((prev) => ({ ...prev, [asset.id]: String(asset.precoAtual) }));
+                        return;
+                      }
+                      if (num !== asset.precoAtual) {
+                        onUpdatePrice(asset.id, num);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.target.blur();
+                      }
+                    }}
                     className="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 w-28 text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </td>
@@ -66,7 +94,7 @@ export default function AssetsTable({ assets, onDelete, onUpdatePrice }) {
                   {formatPercent(pl)}
                 </td>
                 <td className="text-right">
-                  <button 
+                  <button
                     onClick={() => onDelete(asset.id)}
                     className="p-2 rounded hover:bg-red-600 transition-colors"
                     title="Remover"

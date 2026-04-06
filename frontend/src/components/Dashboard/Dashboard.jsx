@@ -33,25 +33,28 @@ export default function Dashboard() {
 
   async function handleDelete(id) {
     if (!confirm('Tem certeza que deseja remover este ativo?')) return;
-    
+
     try {
       await deleteAsset(id);
-      setAssets(prev => prev.filter(a => a.id !== id));
+      setAssets((prev) => prev.filter((a) => a.id !== id));
       fetchData();
     } catch (error) {
-      alert('Erro ao remover ativo: ' + error.message);
+      const msg = error.response?.data?.error || error.message;
+      alert('Erro ao remover ativo: ' + msg);
     }
   }
 
   async function handleUpdatePrice(id, newPrice) {
     try {
-      await updateAsset(id, { precoAtual: parseFloat(newPrice) });
-      setAssets(prev => prev.map(a => 
-        a.id === id ? { ...a, precoAtual: parseFloat(newPrice) } : a
-      ));
+      await updateAsset(id, { precoAtual: newPrice });
+      setAssets((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, precoAtual: newPrice } : a))
+      );
       fetchData();
     } catch (error) {
-      alert('Erro ao atualizar preço: ' + error.message);
+      const msg = error.response?.data?.error || error.message;
+      alert('Erro ao atualizar preço: ' + msg);
+      fetchData();
     }
   }
 

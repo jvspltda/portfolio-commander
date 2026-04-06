@@ -69,8 +69,7 @@ notepad .env
 ```bash
 DATABASE_URL="postgresql://postgres:[SUA_SENHA]@db.[SEU_ID].supabase.co:5432/postgres"
 JWT_SECRET="mude-isso-para-algo-super-secreto-123456"
-USER_EMAIL="jvsp.ltda2@gmail.com"
-USER_PASSWORD="dick1010"
+ALLOWED_USER_EMAIL="jvsp.ltda2@gmail.com"
 FRONTEND_URL="http://localhost:5173"
 TZ="America/Sao_Paulo"
 PORT=3000
@@ -137,10 +136,8 @@ npm run dev
 ## 5️⃣ ACESSAR A APLICAÇÃO (1 min)
 
 1. Abra navegador: **http://localhost:5173**
-2. Faça login:
-   - **Email:** jvsp.ltda2@gmail.com
-   - **Senha:** dick1010
-3. 🎉 **Pronto!** Você está no Dashboard com seus 26 ativos!
+2. Clique em **Entrar** (login sem senha; apenas o e-mail `jvsp.ltda2@gmail.com` é aceito pelo backend).
+3. 🎉 **Pronto!** Você está no Dashboard com seus ativos do seed.
 
 ---
 

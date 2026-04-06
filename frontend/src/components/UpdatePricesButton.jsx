@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../services/api';
 
 export default function UpdatePricesButton() {
   const [loading, setLoading] = useState(false);
@@ -9,26 +10,20 @@ export default function UpdatePricesButton() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/assets/update-prices`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
+      const { data } = await api.post('/assets/update-prices');
 
       if (data.success) {
         setMessage(`✅ ${data.updated} preços atualizados com sucesso!`);
         setTimeout(() => window.location.reload(), 2000);
       } else {
-        setMessage(`❌ Erro: ${data.error}`);
+        setMessage(`❌ Erro: ${data.error || 'Falha desconhecida'}`);
       }
     } catch (error) {
-      setMessage(`❌ Erro ao atualizar preços: ${error.message}`);
+      const detail =
+        error.response?.data?.error ||
+        (typeof error.response?.data === 'string' ? error.response.data : null) ||
+        error.message;
+      setMessage(`❌ Erro ao atualizar preços: ${detail}`);
     } finally {
       setLoading(false);
     }
@@ -64,9 +59,11 @@ export default function UpdatePricesButton() {
       </button>
 
       {message && (
-        <div className={`mt-2 p-3 rounded-lg text-sm ${
-          message.startsWith('✅') ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'
-        }`}>
+        <div
+          className={`mt-2 p-3 rounded-lg text-sm ${
+            message.startsWith('✅') ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'
+          }`}
+        >
           {message}
         </div>
       )}

@@ -17,11 +17,11 @@ Authorization: Bearer {token}
 
 Fazer login e receber token JWT.
 
-**Request:**
+**Request:** apenas o e-mail autorizado (`ALLOWED_USER_EMAIL` no backend; padrão `jvsp.ltda2@gmail.com`). Sem senha.
+
 ```json
 {
-  "email": "jvsp.ltda2@gmail.com",
-  "password": "dick1010"
+  "email": "jvsp.ltda2@gmail.com"
 }
 ```
 

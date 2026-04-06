@@ -1,5 +1,6 @@
-// Taxa de câmbio USD/BRL (fixa por enquanto)
-export const USD_BRL = 5.43;
+const usdBrlEnv = Number(import.meta.env.VITE_USD_BRL);
+export const USD_BRL =
+  Number.isFinite(usdBrlEnv) && usdBrlEnv > 0 ? usdBrlEnv : 5.43;
 
 // Formata moeda
 export function formatCurrency(value, currency = 'BRL') {

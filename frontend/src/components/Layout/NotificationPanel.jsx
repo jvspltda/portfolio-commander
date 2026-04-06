@@ -8,6 +8,7 @@ export default function NotificationPanel({ isOpen, onClose }) {
 
   useEffect(() => {
     if (isOpen) {
+      setLoading(true);
       fetchNotifications();
     }
   }, [isOpen]);

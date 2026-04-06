@@ -2,7 +2,8 @@
 nixPkgs = ['nodejs-18_x']
 
 [phases.install]
-cmds = ['npm install', 'npx prisma generate']
+# npm 10+: use --omit=dev em vez da config deprecada `production` (NODE_ENV=production)
+cmds = ['npm install --omit=dev', 'npx prisma generate']
 
 [start]
 cmd = 'npm start'

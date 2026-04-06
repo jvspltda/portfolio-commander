@@ -99,18 +99,31 @@ export default function AddAlertModal({ assets, onClose, onSuccess }) {
 
           <div>
             <label className="label">
-              Valor do Gatilho * 
-              {formData.tipo === 'preco' ? ' (em reais ou dólares)' : ' (em %)'}
+              Valor do Gatilho *
+              {formData.tipo === 'preco' && ' (preço na moeda do ativo)'}
+              {formData.tipo === 'percentual' && ' (variação P&L em %)'}
+              {formData.tipo === 'alocacao' && ' (% do patrimônio total na moeda de referência do resumo)'}
             </label>
-            <input 
+            <input
               type="number"
               step="0.01"
               className="input"
               value={formData.valorGatilho}
-              onChange={(e) => setFormData({...formData, valorGatilho: e.target.value})}
-              placeholder={formData.tipo === 'preco' ? 'Ex: 100.00' : 'Ex: 30'}
+              onChange={(e) => setFormData({ ...formData, valorGatilho: e.target.value })}
+              placeholder={
+                formData.tipo === 'preco'
+                  ? 'Ex: 100.00'
+                  : formData.tipo === 'alocacao'
+                    ? 'Ex: 25 (% do portfólio)'
+                    : 'Ex: 30'
+              }
               required
             />
+            {formData.tipo === 'alocacao' && (
+              <p className="text-xs text-gray-500 mt-1">
+                Compara a posição deste ativo (valor de mercado) com o total do seu portfólio, ambos convertidos com a mesma taxa USD/BRL usada no app.
+              </p>
+            )}
           </div>
 
           <div>
@@ -134,7 +147,7 @@ export default function AddAlertModal({ assets, onClose, onSuccess }) {
               className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
             />
             <label htmlFor="notificarEmail" className="ml-2 text-sm text-gray-300">
-              Notificar por email (em breve)
+              Notificar por e-mail (requer SMTP no backend — veja README / .env.example)
             </label>
           </div>
 

@@ -38,3 +38,13 @@ npm start
 ```
 
 Servidor rodando em: http://localhost:3000
+
+## Aviso `npm warn config production`
+
+No npm 10+, a opção antiga `production` foi substituída por **`--omit=dev`**. Se esse aviso aparecer no **seu PC**:
+
+```bash
+npm config delete production
+```
+
+O deploy no Railway usa `npm install --omit=dev` no `nixpacks.toml`; o pacote `prisma` está em `dependencies` para o `prisma generate` funcionar após instalar só dependências de produção.

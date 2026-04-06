@@ -1,13 +1,16 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../lib/prisma');
 const { authenticateToken } = require('../middleware/auth');
+const { parseIdParam, parseFiniteNumber } = require('../utils/numbers');
+const { logger } = require('../utils/logger');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+
+const ALLOWED_CONDICOES = ['>', '<', '>=', '<='];
+const ALLOWED_TIPOS = ['preco', 'percentual', 'alocacao'];
 
 router.use(authenticateToken);
 
-// GET /api/alerts
 router.get('/', async (req, res) => {
   try {
     const alerts = await prisma.alert.findMany({
@@ -24,93 +27,122 @@ router.get('/', async (req, res) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    
+
     res.json(alerts);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('GET /alerts:', error);
+    res.status(500).json({ error: 'Erro ao listar alertas' });
   }
 });
 
-// POST /api/alerts
 router.post('/', async (req, res) => {
   try {
     const { assetId, tipo, condicao, valorGatilho, acaoSugerida, notificarEmail } = req.body;
-    
-    if (!assetId || !tipo || !condicao || !valorGatilho || !acaoSugerida) {
+
+    if (!assetId || !tipo || !condicao || valorGatilho === undefined || !acaoSugerida) {
       return res.status(400).json({ error: 'Campos obrigatórios faltando' });
     }
-    
+
+    if (!ALLOWED_CONDICOES.includes(condicao)) {
+      return res.status(400).json({ error: 'Condição inválida' });
+    }
+
+    if (!ALLOWED_TIPOS.includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo de alerta inválido' });
+    }
+
+    const aid = parseIdParam(assetId);
+    if (!aid) {
+      return res.status(400).json({ error: 'Ativo inválido' });
+    }
+
+    const vg = parseFiniteNumber(valorGatilho);
+    if (vg === null) {
+      return res.status(400).json({ error: 'Valor de gatilho inválido' });
+    }
+
     const asset = await prisma.asset.findFirst({
       where: {
-        id: parseInt(assetId),
+        id: aid,
         userId: req.user.id
       }
     });
-    
+
     if (!asset) {
       return res.status(404).json({ error: 'Ativo não encontrado' });
     }
-    
+
     const alert = await prisma.alert.create({
       data: {
         userId: req.user.id,
-        assetId: parseInt(assetId),
+        assetId: aid,
         tipo,
         condicao,
-        valorGatilho: parseFloat(valorGatilho),
+        valorGatilho: vg,
         acaoSugerida,
-        notificarEmail: notificarEmail || false
+        notificarEmail: Boolean(notificarEmail)
       }
     });
-    
+
     res.status(201).json(alert);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('POST /alerts:', error);
+    res.status(500).json({ error: 'Erro ao criar alerta' });
   }
 });
 
-// PUT /api/alerts/:id/toggle
 router.put('/:id/toggle', async (req, res) => {
   try {
+    const id = parseIdParam(req.params.id);
+    if (!id) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
     const alert = await prisma.alert.findFirst({
       where: {
-        id: parseInt(req.params.id),
+        id,
         userId: req.user.id
       }
     });
-    
+
     if (!alert) {
       return res.status(404).json({ error: 'Alerta não encontrado' });
     }
-    
+
     const updated = await prisma.alert.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id },
       data: { ativo: !alert.ativo }
     });
-    
+
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('PUT /alerts/:id/toggle:', error);
+    res.status(500).json({ error: 'Erro ao alternar alerta' });
   }
 });
 
-// DELETE /api/alerts/:id
 router.delete('/:id', async (req, res) => {
   try {
+    const id = parseIdParam(req.params.id);
+    if (!id) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
     const result = await prisma.alert.deleteMany({
       where: {
-        id: parseInt(req.params.id),
+        id,
         userId: req.user.id
       }
     });
-    
+
     if (result.count === 0) {
       return res.status(404).json({ error: 'Alerta não encontrado' });
     }
-    
+
     res.json({ message: 'Alerta removido com sucesso' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error('DELETE /alerts/:id:', error);
+    res.status(500).json({ error: 'Erro ao remover alerta' });
   }
 });
 

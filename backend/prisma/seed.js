@@ -3,16 +3,20 @@ const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
+/** Único usuário da aplicação — deve coincidir com ALLOWED_USER_EMAIL no backend (padrão jvsp.ltda2@gmail.com). */
+const OWNER_EMAIL = 'jvsp.ltda2@gmail.com';
+
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...\n');
 
-  const passwordHash = await bcrypt.hash('dick1010', 10);
+  // Campo obrigatório no schema; não usado no login (acesso só com e-mail).
+  const passwordHash = await bcrypt.hash('unused-password-placeholder', 10);
   
   const user = await prisma.user.upsert({
-    where: { email: 'jvsp.ltda2@gmail.com' },
+    where: { email: OWNER_EMAIL },
     update: {},
     create: {
-      email: 'jvsp.ltda2@gmail.com',
+      email: OWNER_EMAIL,
       password: passwordHash,
       name: 'João Victor'
     }

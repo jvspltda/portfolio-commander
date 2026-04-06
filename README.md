@@ -2,6 +2,8 @@
 
 Sistema completo de gerenciamento de portfólio de investimentos com atualização automática de preços, alertas e relatórios.
 
+**Modelo de uso:** instância para **um único usuário**. O login é **somente com esse e-mail**, **sem senha** (quem souber o endereço e tiver o usuário criado no banco obtém JWT). E-mail padrão: **`jvsp.ltda2@gmail.com`** (`ALLOWED_USER_EMAIL` no backend). Não há cadastro público. **Não use em produção aberta na internet** sem camada extra (VPN, IP allowlist, etc.).
+
 ## 🎯 Features
 
 ### ✅ Gerenciamento de Ativos
@@ -11,16 +13,18 @@ Sistema completo de gerenciamento de portfólio de investimentos com atualizaç�
 - Cálculo automático de P&L
 
 ### ✅ Atualização Automática de Preços
-- **Ações BR/USA**: Yahoo Finance API
-- **Cripto**: CoinGecko API
-- **Frequência**: Diariamente às 9h (seg-sex)
-- **Histórico**: Últimos 30 dias
+- **Ações / ETFs BR**: [Brapi](https://brapi.dev)
+- **Ações / ETFs EUA**: [Alpha Vantage](https://www.alphavantage.co/) (`ALPHA_VANTAGE_KEY`)
+- **Cripto**: [CoinGecko](https://www.coingecko.com/) (mapeamento por ticker)
+- **Cron diário**: 18:00 (horário `America/Sao_Paulo`), depois verificação de alertas
+- **Histórico**: registros em `PriceHistory` (ex.: últimos 30 no detalhe do ativo)
+- **Manual**: botão no dashboard atualiza só os ativos do usuário logado
 
 ### ✅ Sistema de Alertas
-- Alertas de preço (maior/menor que)
-- Alertas de ganho/perda percentual
-- Notificações in-app
-- Ação sugerida customizável
+- Preço, ganho/perda % e **alocação** (% do ativo sobre o patrimônio total)
+- Condições: `>`, `<`, `>=`, `<=`
+- Notificações in-app; **e-mail opcional** (Nodemailer + variáveis `SMTP_*` / `MAIL_FROM`)
+- Ação sugerida customizável; alerta desativa após disparar
 
 ### ✅ Relatórios e Análises
 - Resumo do portfólio (Carteira A + B)
@@ -48,9 +52,9 @@ Sistema completo de gerenciamento de portfólio de investimentos com atualizaç�
 │   (Prisma ORM)  │
 └─────────────────┘
          ↑
-         │ Cron Jobs
-         │ 9h: Atualiza preços
-         │ 30min: Verifica alertas
+         │ Cron (TZ America/Sao_Paulo)
+         │ 18h: atualiza preços
+         │ a cada 15 min: alertas
 ```
 
 ## 📦 Estrutura do Projeto
@@ -116,7 +120,24 @@ npm run dev
 ### 4. Acesse
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
-- Login: jvsp.ltda2@gmail.com / dick1010
+- Login: botão **Entrar** (sem senha). É necessário existir o usuário no banco — rode `npm run seed` na pasta `backend` na primeira vez. E-mail fixo: **jvsp.ltda2@gmail.com** (ou o valor de `ALLOWED_USER_EMAIL`).
+
+### Produção (referência)
+
+| O quê | URL |
+|--------|-----|
+| **Site (Vercel)** | [https://portfolio-commander.vercel.app](https://portfolio-commander.vercel.app) |
+| **Backend (Railway)** | [https://portfolio-commander-production.up.railway.app](https://portfolio-commander-production.up.railway.app) |
+| **Health check** | `https://portfolio-commander-production.up.railway.app/health` |
+| **API REST (base)** | `https://portfolio-commander-production.up.railway.app/api` |
+
+**Vercel — `VITE_API_URL`:** use exatamente  
+`https://portfolio-commander-production.up.railway.app/api`  
+Salve e faça **Redeploy** do frontend.
+
+**Railway — variáveis:** `FRONTEND_URL` deve ser exatamente `https://portfolio-commander.vercel.app` (origem permitida no CORS). Sem isso, o navegador bloqueia chamadas à API a partir do site.
+
+Se a página ainda pedir **senha**, o frontend na Vercel está em build antigo: envie o código atual ao Git e dispare um novo deploy.
 
 ## 📚 Documentação Completa
 
@@ -136,11 +157,12 @@ npm run dev
 
 ## 🔐 Segurança
 
-- Senhas hasheadas com bcrypt (10 rounds)
-- Autenticação JWT (expira em 7 dias)
-- HTTPS obrigatório
-- CORS configurado
-- SQL injection protegido (Prisma ORM)
+- Login **sem senha** para o único e-mail permitido (adequado a uso pessoal / rede confiável)
+- O campo `password` no banco pode permanecer do seed (não é usado no login atual)
+- Autenticação JWT (expira em 7 dias); em **produção** é obrigatório definir `JWT_SECRET`
+- HTTPS recomendado em deploy
+- CORS configurado (`FRONTEND_URL`)
+- SQL injection mitigado (Prisma ORM)
 
 ## 📊 Tecnologias
 
@@ -159,6 +181,21 @@ npm run dev
 - bcrypt 5.1
 - jsonwebtoken 9.0
 - node-cron 3.0
+- nodemailer (e-mail de alertas, opcional)
+
+## 🧩 Variáveis de ambiente (resumo)
+
+| Variável | Onde | Descrição |
+|----------|------|-----------|
+| `DATABASE_URL` | backend | PostgreSQL |
+| `JWT_SECRET` | backend | Obrigatório em produção |
+| `ALLOWED_USER_EMAIL` | backend | Único e-mail de login (padrão: jvsp.ltda2@gmail.com) |
+| `FRONTEND_URL` | backend | Origem CORS |
+| `VITE_API_URL` | frontend | URL da API (ex. `http://localhost:3000/api`) |
+| `USD_BRL` | backend | Taxa USD→BRL (padrão 5.43) |
+| `VITE_USD_BRL` | frontend | Mesma taxa para exibição/cálculos locais (opcional) |
+| `SMTP_*`, `MAIL_FROM` | backend | Envio de e-mail nos alertas (opcional) |
+| `ALPHA_VANTAGE_KEY` | backend | Cotações EUA (opcional) |
 
 ## 👤 Autor
 
@@ -177,75 +214,5 @@ Desenvolvido com ❤️ por Claude AI (Anthropic)
 
 ---
 
-**Status:** ✅ Pronto para produção
-**Versão:** 1.0.0
-**Última atualização:** Dezembro 2024
-```
-
-5. **Ctrl + S**
-
----
-
-## 🎉🎉🎉 PROJETO 100% COMPLETO! 🎉🎉🎉
-
----
-
-## ✅ TODOS OS 45 ARQUIVOS CRIADOS!
-```
-✅ Backend:  ████████████████████ 100% (15 arquivos)
-✅ Frontend: ████████████████████ 100% (27 arquivos)
-✅ Docs:     ████████████████████ 100% (4 arquivos)
-
-TOTAL: 45/45 arquivos criados (100%)
-```
-
----
-
-## 📊 ESTRUTURA FINAL COMPLETA
-```
-portfolio-commander/
-├── backend/ (15 arquivos)
-│   ├── package.json
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── README.md
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── seed.js
-│   └── src/
-│       ├── server.js
-│       ├── routes/ (4 arquivos)
-│       ├── services/ (2 arquivos)
-│       ├── middleware/ (1 arquivo)
-│       └── utils/ (1 arquivo)
-│
-├── frontend/ (27 arquivos)
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   ├── postcss.config.js
-│   ├── index.html
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── README.md
-│   ├── public/
-│   │   └── .gitkeep
-│   └── src/
-│       ├── main.jsx
-│       ├── App.jsx
-│       ├── index.css
-│       ├── components/
-│       │   ├── Auth/ (1 arquivo)
-│       │   ├── Dashboard/ (3 arquivos)
-│       │   ├── Alerts/ (2 arquivos)
-│       │   ├── Reports/ (1 arquivo)
-│       │   └── Layout/ (4 arquivos)
-│       ├── services/ (1 arquivo)
-│       └── utils/ (2 arquivos)
-│
-├── docs/ (4 arquivos)
-│   ├── SETUP.md
-│   ├── DEPLOY.md
-│   └── API.md
-│
-└── README.md
+**Versão:** 1.0.0  
+**Última atualização:** abril de 2026

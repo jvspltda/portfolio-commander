@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { login } from '../../services/api';
+import { SINGLE_USER_EMAIL } from '../../utils/constants';
 
 export default function Login({ onLogin }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -11,18 +10,17 @@ export default function Login({ onLogin }) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
-      const response = await login(email, password);
+      const response = await login(SINGLE_USER_EMAIL);
       const { token, user } = response.data;
-      
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       onLogin(user);
-      
     } catch (err) {
-      const message = err.response?.data?.error || 'Erro ao fazer login. Tente novamente.';
+      const message = err.response?.data?.error || 'Erro ao entrar. Tente novamente.';
       setError(message);
     } finally {
       setLoading(false);
@@ -40,42 +38,23 @@ export default function Login({ onLogin }) {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Portfolio Commander</h1>
           <p className="text-gray-400">Gestão de Investimentos</p>
+          <p className="text-xs text-gray-500 mt-3">
+            Acesso sem senha apenas para <span className="text-gray-400">{SINGLE_USER_EMAIL}</span>
+          </p>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="label">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input"
-              placeholder="seu@email.com"
-              required
-              autoComplete="email"
-              autoFocus
-            />
+          <div className="rounded-lg bg-gray-900/50 border border-gray-700 px-4 py-3">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Conta</p>
+            <p className="text-sm text-white font-medium break-all">{SINGLE_USER_EMAIL}</p>
           </div>
-          
-          <div>
-            <label className="label">Senha</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          
+
           {error && (
             <div className="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -96,10 +75,9 @@ export default function Login({ onLogin }) {
             )}
           </button>
         </form>
-        
+
         <div className="mt-8 text-center text-sm text-gray-400">
           <p>Portfolio Commander v1.0</p>
-          <p className="text-xs mt-1">Desenvolvido com ❤️ por Claude AI</p>
         </div>
       </div>
     </div>
