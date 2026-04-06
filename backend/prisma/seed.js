@@ -1,7 +1,15 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
 const { PrismaClient } = require('@prisma/client');
+const { withPgBouncerParam } = require('../src/lib/prismaUrl');
 const bcrypt = require('bcrypt');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: { url: withPgBouncerParam(process.env.DATABASE_URL) }
+  }
+});
 
 /** Único usuário da aplicação — deve coincidir com ALLOWED_USER_EMAIL no backend (padrão jvsp.ltda2@gmail.com). */
 const OWNER_EMAIL = 'jvsp.ltda2@gmail.com';
