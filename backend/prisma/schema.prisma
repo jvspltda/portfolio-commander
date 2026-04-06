@@ -3,8 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Conexão direta ao Postgres (migrations). No Supabase use a URI "Direct connection" do painel.
+  // Pode ser igual a DATABASE_URL se você não usar pooler (recomendado para evitar "Tenant or user not found").
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

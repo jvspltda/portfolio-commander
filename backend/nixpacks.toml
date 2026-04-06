@@ -3,9 +3,10 @@ nixPkgs = ['nodejs-18_x']
 
 [phases.install]
 # npm 10+: use --omit=dev em vez da config deprecada `production` (NODE_ENV=production)
-cmds = ['npm install --omit=dev', 'npx prisma generate']
+# migrate deploy no BUILD evita SIGTERM/timeout no start (Railway mata processo lento a subir)
+# Exige DATABASE_URL/DIRECT_URL no build (Railway injeta no Nixpacks).
+cmds = ['npm install --omit=dev', 'npx prisma generate', 'npx prisma migrate deploy']
 
 [start]
-# migrate deploy no boot: aplica tabelas quando DATABASE_URL existe (Railway injeta no runtime)
-# `node` direto evita o aviso npm sobre `npm start` + NODE_ENV=production
-cmd = 'npx prisma migrate deploy && node src/server.js'
+# Só Node — startup rápido; migrações já rodaram na fase install.
+cmd = 'node src/server.js'

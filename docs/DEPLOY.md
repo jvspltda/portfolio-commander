@@ -1,168 +1,147 @@
-# 📗 Deploy - Portfolio Commander
+# Deploy — Portfolio Commander
 
-Como colocar sua aplicação online **GRÁTIS**.
-
-## 🌐 SERVIÇOS GRATUITOS
-
-- **Vercel** → Frontend (React)
-- **Railway** → Backend (Node.js)
-- **Supabase** → Database (PostgreSQL)
-
-**Custo total:** R$ 0,00/mês
+Visão geral: **Vercel** (frontend) + **Railway** (backend Node) + **Supabase** (PostgreSQL).
 
 ---
 
-## 1️⃣ DEPLOY DO DATABASE (JÁ FEITO!)
+## 1. Supabase (banco)
 
-Se você seguiu o SETUP.md, seu database já está no Supabase! ✅
-
----
-
-## 2️⃣ DEPLOY DO BACKEND (Railway)
-
-### **Criar conta Railway:**
-
-1. Acesse: https://railway.app
-2. Clique em "Start a New Project"
-3. Login com GitHub
-4. Autorize o Railway
-
-### **Fazer deploy:**
-
-1. No Railway, clique em **"New Project"**
-2. Escolha **"Deploy from GitHub repo"**
-3. Conecte sua conta GitHub
-4. Selecione o repositório `portfolio-commander`
-5. Railway detecta automaticamente Node.js
-6. Clique em **"Deploy"**
-
-### **Configurar variáveis de ambiente:**
-
-1. No projeto Railway, clique em **"Variables"**
-2. Adicione estas variáveis:
-```
-DATABASE_URL=sua-url-do-supabase
-JWT_SECRET=seu-secret-super-seguro
-ALLOWED_USER_EMAIL=jvsp.ltda2@gmail.com
-FRONTEND_URL=https://seu-app.vercel.app
-TZ=America/Sao_Paulo
-PORT=3000
-NODE_ENV=production
-```
-
-3. Clique em **"Deploy"** novamente
-
-### **Pegar URL do backend:**
-
-1. Vá em **"Settings"**
-2. Procure **"Domains"**
-3. Clique em **"Generate Domain"**
-4. Copie a URL (ex: `portfolio-backend.up.railway.app`)
-
-✅ **Backend online!**
+1. Crie o projeto em [supabase.com](https://supabase.com).
+2. **Project Settings → Database** → copie a connection string **Direct** (host `db.<ref>.supabase.co`, porta `5432`, usuário `postgres`).
+3. Guarde **senha** do banco; na URI, caracteres especiais na senha devem estar **URL-encoded**.
 
 ---
 
-## 3️⃣ DEPLOY DO FRONTEND (Vercel)
+## 2. Railway — backend (detalhado)
 
-### **Instalar Vercel CLI:**
+### 2.1 Criar o serviço
+
+1. Acesse [railway.app](https://railway.app) e faça login com **GitHub**.
+2. **New Project** → **Deploy from GitHub repo** → selecione `portfolio-commander` (ou o nome do seu fork).
+3. O Railway detecta **Nixpacks** (há `backend/nixpacks.toml` na pasta `backend`).
+
+### 2.2 Ajustar raiz do serviço (importante)
+
+O código da API está em **`backend/`**:
+
+1. Clique no **serviço** (card do deploy).
+2. **Settings** → **Root Directory** → defina: **`backend`**
+3. Salve. O próximo deploy usará `backend/nixpacks.toml` e `backend/package.json`.
+
+Se a raiz for a raiz do monorepo sem apontar para `backend`, o build pode falhar ou subir o projeto errado.
+
+### 2.3 Variáveis de ambiente (Variables)
+
+No serviço → **Variables** → adicione (valores reais vêm do Supabase / gerados por você):
+
+| Variável | Obrigatório | Descrição |
+|----------|-------------|-----------|
+| `DATABASE_URL` | Sim | URI **PostgreSQL** do Supabase. Recomendação: **Direct connection** (evita erro *Tenant or user not found* no pooler). Acrescente `?sslmode=require` se o painel não incluir. |
+| `DIRECT_URL` | Sim | **Mesma URI** da conexão direta ao Postgres (Prisma usa para migrations). Se usar só direct, duplique o valor de `DATABASE_URL`. |
+| `JWT_SECRET` | Sim | String longa e aleatória (não commite no Git). |
+| `ALLOWED_USER_EMAIL` | Opcional | E-mail único permitido no login (padrão no código: `jvsp.ltda2@gmail.com`). |
+| `FRONTEND_URL` | Sim | URL exata do site na Vercel, ex.: `https://portfolio-commander.vercel.app` (CORS). Sem `barra` no final. |
+| `NODE_ENV` | Sim | `production` |
+| `PORT` | Opcional | O Railway injeta `PORT`; pode omitir ou usar `3000`. |
+| `TZ` | Opcional | `America/Sao_Paulo` (crons de preço/alertas). |
+
+Salve. O Railway costuma **redeployar** sozinho ao alterar variáveis.
+
+### 2.4 Domínio público
+
+1. Serviço → **Settings** → **Networking** / **Domains**.
+2. **Generate Domain** (ou domínio customizado).
+3. Anote a URL, ex.: `https://portfolio-commander-production.up.railway.app`  
+   A API REST fica em: **`https://<seu-dominio>/api`**
+
+### 2.5 O que o deploy executa (Nixpacks)
+
+- **Install (build):** `npm install --omit=dev` → `prisma generate` → **`prisma migrate deploy`**
+- **Start:** apenas `node src/server.js`
+
+As migrations rodam no **build** para o container não ficar bloqueado no boot (evita **SIGTERM** / timeout do Railway enquanto espera migrate + servidor). É preciso que **`DATABASE_URL`** e **`DIRECT_URL`** existam já na etapa de build (no Railway costumam estar disponíveis).
+
+Se o build falhar em `migrate deploy`, rode as migrations uma vez no **Shell** do Railway: `cd backend && npx prisma migrate deploy`, ou corrija as variáveis.
+
+### 2.6 Verificar se subiu
+
+No navegador ou `curl`:
+
+- `GET https://<seu-dominio>/health` → JSON `status: ok`
+- `GET https://<seu-dominio>/health/db` → `database: connected` (se `DATABASE_URL` estiver correta)
+- `GET https://<seu-dominio>/api` → lista de rotas
+
+Se `/health/db` falhar, revise `DATABASE_URL` / `DIRECT_URL` e SSL.
+
+### 2.7 Popular o banco (seed) — uma vez
+
+O login precisa do **usuário** no Postgres (criado pelo seed):
+
+- **Opção A — máquina local:** no `backend/.env`, `DATABASE_URL` e `DIRECT_URL` iguais à produção (cuidado para não commitar).  
+  `cd backend` → `npm install` → `npx prisma db seed`
+- **Opção B — Railway:** **Deployments** → abrir o deploy ativo → **Shell** (se disponível) → entrar na pasta `backend` e `npm run seed` (depende da imagem).
+
+### 2.8 Deploy automático via Git
+
+Com o repositório conectado, cada **push** na branch configurada (ex.: `main`) dispara **novo build/deploy**.  
+Alterar só variáveis no Railway **não desliga** isso; após salvar env, muitas vezes há redeploy automático.
+
+---
+
+## 3. Vercel — frontend
+
+1. Importe o mesmo repositório em [vercel.com](https://vercel.com).
+2. **Root Directory:** `frontend` (se o monorepo tiver front e back juntos).
+3. **Environment Variables:**
+   - `VITE_API_URL` = `https://<seu-dominio-railway>/api` (com **`/api` no final**).
+4. **Deploy**. Anote a URL (ex.: `https://portfolio-commander.vercel.app`).
+
+### CORS
+
+Volte ao Railway e confirme `FRONTEND_URL` = URL exata do Vercel. Redeploy se necessário.
+
+---
+
+## 4. Próximos passos (checklist)
+
+| # | Ação |
+|---|------|
+| 1 | Supabase com projeto criado e senha guardada |
+| 2 | Railway: serviço com **Root Directory** = `backend` |
+| 3 | Railway: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `FRONTEND_URL`, `NODE_ENV=production` |
+| 4 | Railway: domínio gerado; testar `/health` e `/health/db` |
+| 5 | Rodar **seed** no banco de produção |
+| 6 | Vercel: `VITE_API_URL` apontando para `.../api` |
+| 7 | Testar site → **Entrar** (e-mail permitido) |
+| 8 | Próximos deploys: `git push` no `main` (e variáveis sempre só no painel, nunca no repositório) |
+
+---
+
+## 5. Problemas comuns
+
+| Sintoma | O que checar |
+|---------|----------------|
+| **`npm error signal SIGTERM`** / processo morto ao subir | O Railway encerrou o processo (timeout, OOM ou health check). Migrações foram movidas para o **build** do Nixpacks para o start só rodar `node`. Confira **Logs** do deploy; se faltar RAM, tente variável `NODE_OPTIONS=--max-old-space-size=512`. |
+| *Tenant or user not found* | Usar URI **Direct** do Supabase; mesma URI em `DATABASE_URL` e `DIRECT_URL`. |
+| 500 no login | Logs do Railway; `/health/db`; seed executado; `JWT_SECRET` definido. |
+| CORS no navegador | `FRONTEND_URL` = URL exata do Vercel. |
+| Build falha em `migrate deploy` | `DATABASE_URL`/`DIRECT_URL` no Railway; se o build não vê variáveis, rode `migrate deploy` uma vez no Shell do serviço. |
+| Build falha | Root Directory `backend`; `nixpacks.toml` na pasta `backend`. |
+
+---
+
+## 6. Atualizar código depois
+
 ```bash
-npm install -g vercel
-```
-
-### **Fazer deploy:**
-```bash
-cd frontend
-
-# Login
-vercel login
-
-# Deploy
-vercel
-```
-
-Responda as perguntas:
-- **Set up and deploy?** → Y
-- **Which scope?** → [sua conta]
-- **Link to existing project?** → N
-- **Project name?** → portfolio-commander
-- **Directory?** → ./
-- **Override settings?** → N
-
-### **Configurar variáveis:**
-```bash
-vercel env add VITE_API_URL
-```
-
-Cole a URL do Railway (ex: `https://portfolio-backend.up.railway.app/api`)
-
-### **Deploy de produção:**
-```bash
-vercel --prod
-```
-
-✅ **Frontend online!**
-
-Você receberá uma URL tipo: `https://portfolio-commander.vercel.app`
-
----
-
-## 4️⃣ ATUALIZAR CORS NO BACKEND
-
-1. Volte no **Railway**
-2. Vá em **Variables**
-3. Atualize `FRONTEND_URL` com a URL do Vercel
-4. **Redeploy**
-
----
-
-## 5️⃣ TESTAR APLICAÇÃO ONLINE
-
-1. Abra a URL do Vercel
-2. Clique em **Entrar** (sem senha; só o e-mail configurado em `ALLOWED_USER_EMAIL`).
-3. 🎉 **Aplicação online e funcionando!**
-
----
-
-## 🔄 ATUALIZAR CÓDIGO
-
-Quando fizer mudanças:
-```bash
-# Backend (Railway)
 git add .
-git commit -m "Update"
-git push
-# Railway faz deploy automático!
-
-# Frontend (Vercel)
-cd frontend
-vercel --prod
+git commit -m "sua mensagem"
+git push origin main
 ```
 
----
-
-## 💰 CUSTOS
-
-| Serviço | Plano | Custo |
-|---------|-------|-------|
-| Vercel | Hobby | R$ 0 |
-| Railway | Starter | R$ 0 |
-| Supabase | Free | R$ 0 |
-
-**Total:** R$ 0/mês 🎉
+Railway (e Vercel, se ligado ao Git) redeployam conforme a integração.
 
 ---
 
-## 📊 LIMITES GRATUITOS
+## 7. Custos (planos gratuitos típicos)
 
-- **Vercel:** 100GB bandwidth/mês
-- **Railway:** 500 horas/mês
-- **Supabase:** 500MB database
-
-**Suficiente para uso pessoal!**
-
----
-
-## 💬 PROBLEMAS?
-
-WhatsApp: +55 38 99824-0504
+Uso pessoal costuma caber nos limites gratuitos; confira os sites oficiais de Vercel, Railway e Supabase para limites atuais.
