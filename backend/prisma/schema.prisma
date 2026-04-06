@@ -1,13 +1,14 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Docker (node:bookworm) + OpenSSL 3 — evita schema engine errado no container
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  // Conexão direta ao Postgres (migrations). No Supabase use a URI "Direct connection" do painel.
-  // Pode ser igual a DATABASE_URL se você não usar pooler (recomendado para evitar "Tenant or user not found").
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  // Supabase: use a URI "Direct connection" (db.xxx.supabase.co:5432) em uma única variável.
+  // Se no futuro usar pooler PgBouncer + URL direta para migrations, veja doc Prisma + Supabase (directUrl).
+  url      = env("DATABASE_URL")
 }
 
 model User {
