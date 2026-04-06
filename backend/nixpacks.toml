@@ -6,5 +6,6 @@ nixPkgs = ['nodejs-18_x']
 cmds = ['npm install --omit=dev', 'npx prisma generate']
 
 [start]
-# `node` direto evita o aviso npm 10+ sobre `config production` ao usar `npm start` com NODE_ENV=production
-cmd = 'node src/server.js'
+# migrate deploy no boot: aplica tabelas quando DATABASE_URL existe (Railway injeta no runtime)
+# `node` direto evita o aviso npm sobre `npm start` + NODE_ENV=production
+cmd = 'npx prisma migrate deploy && node src/server.js'

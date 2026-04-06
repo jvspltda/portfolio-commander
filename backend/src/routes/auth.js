@@ -7,8 +7,56 @@ const { logger } = require('../utils/logger');
 
 const router = express.Router();
 
+function loginErrorResponse(error) {
+  const code = error.code;
+  const name = error.name || '';
+
+  logger.error(`Erro no login: ${error.message}`);
+  console.error('[auth/login]', name, code, error.message);
+
+  if (code === 'P1001' || code === 'P1000') {
+    return {
+      status: 503,
+      body: {
+        error: 'Não foi possível conectar ao banco. Confira DATABASE_URL no Railway e se o Supabase aceita conexões (SSL).',
+        code
+      }
+    };
+  }
+  if (code === 'P1017') {
+    return {
+      status: 503,
+      body: {
+        error: 'Conexão com o banco foi encerrada. Tente de novo ou revise o pooler do Supabase.',
+        code
+      }
+    };
+  }
+  if (name === 'PrismaClientInitializationError') {
+    return {
+      status: 503,
+      body: {
+        error: 'Prisma não conseguiu inicializar. Verifique DATABASE_URL e se rodou prisma migrate.',
+        code: name
+      }
+    };
+  }
+
+  return {
+    status: 500,
+    body: {
+      error: 'Erro no servidor',
+      ...(code && { code })
+    }
+  };
+}
+
 router.post('/login', async (req, res) => {
   try {
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({ error: 'Envie JSON com o campo email' });
+    }
+
     const { email } = req.body;
 
     if (!email || typeof email !== 'string') {
@@ -52,10 +100,8 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error(`Erro no login: ${error.message}`);
-    res.status(500).json({
-      error: 'Erro no servidor'
-    });
+    const { status, body } = loginErrorResponse(error);
+    res.status(status).json(body);
   }
 });
 

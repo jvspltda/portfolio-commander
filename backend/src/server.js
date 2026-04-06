@@ -15,6 +15,7 @@ const { logger } = require('./utils/logger');
 const { startPriceUpdateCron } = require('./services/priceUpdater');
 const { startAlertCheckCron } = require('./services/alertChecker');
 
+const prisma = require('./lib/prisma');
 const authRoutes = require('./routes/auth');
 const assetsRoutes = require('./routes/assets');
 const alertsRoutes = require('./routes/alerts');
@@ -33,19 +34,60 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', (req, res) => {
-  res.json({
+function healthJson() {
+  return {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
+  };
+}
+
+app.get('/health', (req, res) => {
+  res.json(healthJson());
+});
+
+app.get('/api/health', (req, res) => {
+  res.json(healthJson());
+});
+
+async function healthDbHandler(req, res) {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok', database: 'connected' });
+  } catch (err) {
+    console.error('[health/db]', err);
+    res.status(503).json({
+      status: 'error',
+      database: 'disconnected',
+      code: err.code,
+      message: err.message
+    });
+  }
+}
+
+app.get('/health/db', healthDbHandler);
+app.get('/api/health/db', healthDbHandler);
+
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'Portfolio Commander API',
+    routes: {
+      health: 'GET /health ou GET /api/health',
+      healthDb: 'GET /health/db ou GET /api/health/db',
+      login: 'POST /api/auth/login',
+      assets: 'GET /api/assets',
+      alerts: 'GET /api/alerts',
+      notifications: 'GET /api/notifications'
+    }
   });
 });
 
 app.get('/', (req, res) => {
   res.json({
     name: 'Portfolio Commander API',
-    message: 'As rotas da aplicação ficam sob o prefixo /api',
+    message: 'Rotas REST usam o prefixo /api (ex.: /api/auth/login). Health: /health ou /api/health.',
     health: '/health',
+    healthDb: '/health/db',
     examples: {
       login: 'POST /api/auth/login',
       assets: 'GET /api/assets (requer Authorization: Bearer …)'
@@ -61,7 +103,8 @@ app.use('/api/notifications', notificationsRoutes);
 app.use((req, res) => {
   res.status(404).json({
     error: 'Route not found',
-    hint: 'Início: GET / ou GET /health. API: /api/auth, /api/assets, /api/alerts, /api/notifications'
+    hint:
+      'GET / ou GET /api para ver rotas. Health: /health (não /api só). Login: POST /api/auth/login. Teste DB: GET /health/db'
   });
 });
 

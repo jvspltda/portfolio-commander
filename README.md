@@ -137,6 +137,8 @@ Salve e faça **Redeploy** do frontend.
 
 **Railway — variáveis:** `FRONTEND_URL` deve ser exatamente `https://portfolio-commander.vercel.app` (origem permitida no CORS). Sem isso, o navegador bloqueia chamadas à API a partir do site.
 
+**“Erro no servidor” ao entrar:** quase sempre **banco** ou **usuário inexistente**. Confira no Railway: `DATABASE_URL` (Postgres), `JWT_SECRET`. O deploy roda `prisma migrate deploy` ao subir; falta criar o usuário no banco de produção uma vez (no PC, com a URL do Supabase no `.env`: `cd backend && npx prisma db seed`, ou use o shell do Railway e `npm run seed`). Nos logs do Railway deve aparecer o stack trace após o login falhar.
+
 Se a página ainda pedir **senha**, o frontend na Vercel está em build antigo: envie o código atual ao Git e dispare um novo deploy.
 
 ## 📚 Documentação Completa
