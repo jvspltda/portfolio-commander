@@ -8,6 +8,7 @@
     "start": "node scripts/start-prod.js",
     "migrate": "prisma migrate dev",
     "seed": "node prisma/seed.js",
+    "test:prices": "node scripts/test-price-apis.js",
     "studio": "prisma studio"
   },
   "keywords": [],

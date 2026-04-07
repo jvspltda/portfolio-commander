@@ -4,7 +4,7 @@ const { getAssetPrice, getUSDtoBRL } = require('./priceAPI');
 const { logger } = require('../utils/logger');
 const { checkAllAlerts } = require('./alertChecker');
 
-const TIPOS_ATUALIZAVEIS = ['Cripto', 'Ação BR', 'Ação USA', 'ETF BR', 'ETF USA'];
+const TIPOS_ATUALIZAVEIS = ['Cripto', 'Ação BR', 'Ação USA', 'ETF BR', 'ETF USA', 'BDR'];
 
 /**
  * @param {number} [userId] - Se informado, atualiza apenas ativos deste usuário; caso contrário, todos.

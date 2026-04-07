@@ -30,6 +30,9 @@ const CRYPTO_MAP = {
   'BTC': 'bitcoin',
   'ETH': 'ethereum',
   'SOL': 'solana',
+  'LTC': 'litecoin',
+  'HBAR': 'hedera-hashgraph',
+  'LINK': 'chainlink',
   'FET': 'fetch-ai',
   'RENDER': 'render-token',
   'ONDO': 'ondo-finance',
@@ -41,12 +44,14 @@ const CRYPTO_MAP = {
   'MAGIC': 'magic'
 };
 
-// Buscar preço de ação brasileira (Brapi)
+// Buscar preço de ação brasileira (Brapi) — token opcional se receber 401
 async function getBRStockPrice(ticker) {
   try {
-    const response = await axios.get(`https://brapi.dev/api/quote/${ticker}`, {
-      timeout: 5000
-    });
+    const token = process.env.BRAPI_TOKEN;
+    const url = token
+      ? `https://brapi.dev/api/quote/${ticker}?token=${encodeURIComponent(token)}`
+      : `https://brapi.dev/api/quote/${ticker}`;
+    const response = await axios.get(url, { timeout: 5000 });
     
     if (response.data.results && response.data.results.length > 0) {
       return parseFloat(response.data.results[0].regularMarketPrice);
@@ -107,7 +112,7 @@ async function getAssetPrice(asset) {
     
     if (tipo === 'Cripto') {
       price = await getCryptoPrice(ticker);
-    } else if (tipo === 'Ação BR' || tipo === 'ETF BR') {
+    } else if (tipo === 'Ação BR' || tipo === 'ETF BR' || tipo === 'BDR') {
       price = await getBRStockPrice(ticker);
     } else if (tipo === 'Ação USA' || tipo === 'ETF USA') {
       price = await getUSStockPrice(ticker);
