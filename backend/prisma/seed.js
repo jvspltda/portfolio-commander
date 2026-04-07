@@ -62,7 +62,7 @@ async function main() {
     { ticker: 'NVDC34', name: 'NVIDIA BDR', carteira: 'A', tipo: 'BDR', quantidade: 2060, precoEntrada: 19.95, precoAtual: 2.42, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
     { ticker: 'PETR4', name: 'Petrobras', carteira: 'A', tipo: 'Ação BR', quantidade: 370, precoEntrada: 36.89, precoAtual: 33.33, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
     { ticker: 'PRIO3', name: 'PRIO', carteira: 'A', tipo: 'Ação BR', quantidade: 144, precoEntrada: 52.56, precoAtual: 20.78, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
-    { ticker: 'QTBC11', name: 'Quantum ETF', carteira: 'A', tipo: 'ETF BR', quantidade: 4842, precoEntrada: 21.89, precoAtual: 31.19, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
+    { ticker: 'QBTC11', name: 'Bitcoin ETF (B3)', carteira: 'A', tipo: 'ETF BR', quantidade: 4842, precoEntrada: 21.89, precoAtual: 31.19, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
     { ticker: 'TAEE11', name: 'Taesa', carteira: 'A', tipo: 'Ação BR', quantidade: 135, precoEntrada: 43.6, precoAtual: 38.01, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
     { ticker: 'VALE3', name: 'Vale', carteira: 'A', tipo: 'Ação BR', quantidade: 72, precoEntrada: 87.03, precoAtual: 69.57, currency: 'BRL', corretora: 'XP', dataCompra: refDate },
     { ticker: 'WEGE3', name: 'WEG', carteira: 'A', tipo: 'Ação BR', quantidade: 56, precoEntrada: 53.8, precoAtual: 35.85, currency: 'BRL', corretora: 'XP', dataCompra: refDate },

@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const prisma = require('../lib/prisma');
-const { getAssetPrice, getUSDtoBRL } = require('./priceAPI');
+const { getAssetPrice, getUSDtoBRL, fetchCryptoBRLBatch } = require('./priceAPI');
 const { logger } = require('../utils/logger');
 const { checkAllAlerts } = require('./alertChecker');
 
@@ -28,12 +28,28 @@ async function updateAllPrices(userId) {
 
     console.log(`📊 Encontrados ${assets.length} ativos para atualizar`);
 
+    const cryptoTickers = assets
+      .filter((a) => a.tipo === 'Cripto')
+      .map((a) => a.ticker);
+    const cryptoPrices = await fetchCryptoBRLBatch(cryptoTickers);
+    if (cryptoPrices.size > 0) {
+      console.log(`🪙 CoinGecko: ${cryptoPrices.size} cripto(s) em uma requisição`);
+    }
+
     let updated = 0;
     let failed = 0;
 
     for (const asset of assets) {
       try {
-        const newPrice = await getAssetPrice(asset);
+        let newPrice = null;
+        if (asset.tipo === 'Cripto') {
+          newPrice = cryptoPrices.get(String(asset.ticker).toUpperCase()) ?? null;
+          if (newPrice == null) {
+            newPrice = await getAssetPrice(asset);
+          }
+        } else {
+          newPrice = await getAssetPrice(asset);
+        }
 
         if (newPrice && newPrice > 0) {
           await prisma.$transaction([

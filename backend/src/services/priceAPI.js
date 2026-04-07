@@ -5,16 +5,22 @@ const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY || 'demo';
 
 // Variável global para cotação USD/BRL
 let USD_BRL_RATE = 5.43;
+let USD_BRL_FETCHED_AT = 0;
+const USD_BRL_TTL_MS = 120000;
 
-// Buscar cotação do dólar
-async function getUSDtoBRL() {
+// Buscar cotação do dólar (com cache — evita 429 na AwesomeAPI ao atualizar várias ações EUA)
+async function getUSDtoBRL(forceRefresh = false) {
+  if (!forceRefresh && Date.now() - USD_BRL_FETCHED_AT < USD_BRL_TTL_MS) {
+    return USD_BRL_RATE;
+  }
   try {
     const response = await axios.get('https://economia.awesomeapi.com.br/json/last/USD-BRL', {
       timeout: 5000
     });
-    
+
     if (response.data && response.data.USDBRL && response.data.USDBRL.bid) {
       USD_BRL_RATE = parseFloat(response.data.USDBRL.bid);
+      USD_BRL_FETCHED_AT = Date.now();
       console.log(`💱 Cotação USD/BRL: R$ ${USD_BRL_RATE.toFixed(2)}`);
       return USD_BRL_RATE;
     }
@@ -71,7 +77,6 @@ async function getUSStockPrice(ticker) {
     
     if (response.data['Global Quote'] && response.data['Global Quote']['05. price']) {
       const priceUSD = parseFloat(response.data['Global Quote']['05. price']);
-      await getUSDtoBRL();
       return priceUSD * USD_BRL_RATE;
     }
     return null;
@@ -79,6 +84,44 @@ async function getUSStockPrice(ticker) {
     console.error(`Erro ao buscar ${ticker} (US):`, error.message);
     return null;
   }
+}
+
+/**
+ * Uma requisição CoinGecko para vários tickers (evita 429 no plano gratuito).
+ * @param {Iterable<string>} tickers ex.: ['BTC','ETH']
+ * @returns {Promise<Map<string, number>>} ticker em MAIÚSCULO → preço BRL
+ */
+async function fetchCryptoBRLBatch(tickers) {
+  const upper = [...new Set([...tickers].map((t) => String(t).toUpperCase()))];
+  const ids = [];
+  const idSet = new Set();
+  const tickerToId = {};
+  for (const t of upper) {
+    const id = CRYPTO_MAP[t];
+    if (!id) continue;
+    tickerToId[t] = id;
+    if (!idSet.has(id)) {
+      idSet.add(id);
+      ids.push(id);
+    }
+  }
+  const map = new Map();
+  if (ids.length === 0) return map;
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=brl`;
+    const response = await axios.get(url, { timeout: 12000 });
+    const data = response.data;
+    for (const t of upper) {
+      const id = tickerToId[t];
+      if (id && data[id]?.brl != null) {
+        map.set(t, parseFloat(data[id].brl));
+      }
+    }
+  } catch (error) {
+    console.error('Erro CoinGecko (batch):', error.message);
+  }
+  return map;
 }
 
 // Buscar preço de criptomoeda (CoinGecko)
@@ -136,6 +179,7 @@ module.exports = {
   getBRStockPrice,
   getUSStockPrice,
   getCryptoPrice,
-  getUSDtoBRL
+  getUSDtoBRL,
+  fetchCryptoBRLBatch
 };
  
